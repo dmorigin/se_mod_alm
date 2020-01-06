@@ -49,17 +49,44 @@ namespace IngameScript
                 MyIni ini = new MyIni();
                 if (ini.TryParse(block.CustomData))
                 {
+                    // read system config
+                    if (ini.ContainsSection("system"))
+                    {
+                        Program.DefaultAirlockTag = getIniString(ini, "system", "tag", "Airlock");
+                        Program.DefaultAirlockInnerTag = getIniString(ini, "system", "innertag", "In");
+                        Program.DefaultAirlockOuterTag = getIniString(ini, "system", "outertag", "Out");
+                        Program.DefaultAirlockDelayTime = TimeSpan.FromSeconds(getIniDouble(ini, "system", "delay", 1.0));
+                        Program.DefaultAutomaticMode = getIniAutomatic(ini, "system", "mode", Automatic.Full);
+
+                        switch (getIniString(ini, "system", "interval", "10"))
+                        {
+                            case "1":
+                                Program.DefualtUpdateFrequency = UpdateFrequency.Update1;
+                                break;
+                            case "100":
+                                Program.DefualtUpdateFrequency = UpdateFrequency.Update100;
+                                break;
+                            default:
+                                Program.DefualtUpdateFrequency = UpdateFrequency.Update10;
+                                break;
+                        }
+                    }
+
+                    // read airlock config
                     List<string> sections = new List<string>();
                     ini.GetSections(sections);
 
                     foreach (var section in sections)
                     {
-                        Data data = new Data();
-                        data.name_ = section;
-                        data.delay_ = new TimeSpan(getIniLong(ini, section, "delay", Program.DefaultAirlockDelayTime) * Program.MStoTick);
-                        data.automatic_ = getIniAutomatic(ini, section, "automatic", Program.DefaultAutomaticMode);
+                        if (section != "system")
+                        {
+                            Data data = new Data();
+                            data.name_ = section;
+                            data.delay_ = TimeSpan.FromSeconds(getIniDouble(ini, section, "delay", Program.DefaultAirlockDelayTime.Seconds));
+                            data.automatic_ = getIniAutomatic(ini, section, "automatic", Program.DefaultAutomaticMode);
 
-                        cfg.Add(data);
+                            cfg.Add(data);
+                        }
                     }
 
                     return true;
@@ -74,7 +101,7 @@ namespace IngameScript
                 var data = new Data();
                 data.name_ = name;
                 data.automatic_ = Program.DefaultAutomaticMode;
-                data.delay_ = new TimeSpan(Program.DefaultAirlockDelayTime * Program.MStoTick);
+                data.delay_ = Program.DefaultAirlockDelayTime;
 
                 return data;
             }
@@ -102,6 +129,14 @@ namespace IngameScript
                 if (!ini.ContainsKey(section, key))
                     return defaultValue;
                 return ini.Get(section, key).ToInt64();
+            }
+
+
+            private double getIniDouble(MyIni ini, string section, string key, double defaultValue)
+            {
+                if (!ini.ContainsKey(section, key))
+                    return defaultValue;
+                return ini.Get(section, key).ToDouble(defaultValue);
             }
 
 

@@ -9,35 +9,31 @@
  * For detailed informations read the README.md on github.
  */
 
-const string VERSION = "0.3 Alpha";
-const long MStoTick = 10000;
+const string VERSION = "0.4 Alpha";
 
-
-// Default values
-const string DefultAirlockTag = "Airlock";
-const string DefultAirlockInnerTag = "Inner";
-const string DefultAirlockOuterTag = "Outer";
-const long DefaultAirlockDelayTime = 1000; // set to 1.0s
-const Config.Automatic DefaultAutomaticMode = Config.Automatic.Full;
-const UpdateFrequency DefualtUpdateFrequency = UpdateFrequency.Update1;
-
+// config values
+static string DefaultAirlockTag = "Airlock";
+static string DefaultAirlockInnerTag = "In";
+static string DefaultAirlockOuterTag = "Out";
+static TimeSpan DefaultAirlockDelayTime = TimeSpan.FromSeconds(1);
+static Config.Automatic DefaultAutomaticMode = Config.Automatic.Full;
+static UpdateFrequency DefualtUpdateFrequency = UpdateFrequency.Update10;
 
 private delegate bool AirlockPairCallback(Airlock pair);
 
-
 // variables
-private List<Airlock> airlocks = new List<Airlock>();
-private List<Config.Data> configs_ = new List<Config.Data>();
-private IMyTextSurface surface_ = null;
-private string log_ = "";
-
+List<Airlock> airlocks = new List<Airlock>();
+List<Config.Data> configs_ = new List<Config.Data>();
+IMyTextSurface surface_ = null;
+TimeSpan timer = new TimeSpan(0);
+Statistics statistics_ = new Statistics();
 
 private string getAirlockName(string customName)
 {
     return customName
-        .Replace(Program.DefultAirlockTag, "")
-        .Replace(Program.DefultAirlockInnerTag, "")
-        .Replace(Program.DefultAirlockOuterTag, "")
+        .Replace(DefaultAirlockTag, "")
+        .Replace(DefaultAirlockInnerTag, "")
+        .Replace(DefaultAirlockOuterTag, "")
         .Trim();
 }
 
@@ -79,11 +75,11 @@ private void InitializeAirLocks()
     }
 
     // find new doors
-    airlocks = new List<Airlock>();
+    airlocks.Clear();
     GridTerminalSystem.GetBlocksOfType<IMyDoor>(null, (door) =>
     {
         // is an airlock door
-        if (door.CustomName.Contains(Program.DefultAirlockTag))
+        if (door.CustomName.Contains(Program.DefaultAirlockTag))
         {
             string airlockName = getAirlockName(door.CustomName);
 
@@ -117,66 +113,45 @@ private void InitializeAirLocks()
     surface_.Font = "debug";
 }
 
-public Program()
+void InitilizeApp()
 {
-    Runtime.UpdateFrequency = DefualtUpdateFrequency;
-
     // initialize
     InitializeAirLocks();
+
+    Runtime.UpdateFrequency = DefualtUpdateFrequency;
+    statistics_.setSensitivity(Runtime.UpdateFrequency);
 }
 
+public Program()
+{
+    InitilizeApp();
+}
 
 public void Save()
 {
 }
-
-
-// execute iteration
-private TimeSpan timer = new TimeSpan(0);
-private double lastRunTimeMS = 0;
-private int ticks = 0;
 
 public void Main(string argument, UpdateType updateSource)
 {
     try
     {
         timer += Runtime.TimeSinceLastRun;
-        lastRunTimeMS += Runtime.LastRunTimeMs;
-
-        if (ticks == 0)
-        {
-            log_ = $"Airlock Manager (v{Program.VERSION})\n";
-            log_ += "============================\n";
-            log_ += $"Airlocks: {airlocks.Count.ToString()}\n";
-            log_ += $"Avg Exec Time: {(lastRunTimeMS / 100.0).ToString("#0.#######")}ms\n";
-            log_ += "Airlock States\n------------------------------------\n";
-            //log += $"timer: {timer.TotalSeconds.ToString("#0.###")}\n";
-        }
 
         // process iteration step
         foreach (var airlock in airlocks)
-        {
             airlock.Tick(timer);
 
-            if (ticks == 0)
-            {
-                if (airlock.IsProcessing)
-                    log_ += $"{airlock.Name}: {airlock.CurrentSate.ToString()}\n";
-            }
-        }
-
-        if (ticks == 0)
+        string stats = statistics_.update(this);
+        if (stats != "")
         {
-            surface_.WriteText(log_);
-            lastRunTimeMS = 0;
+            Echo(stats);
+            surface_.WriteText(stats);
         }
-
-        if (++ticks > 100)
-            ticks = 0;
     }
     catch (Exception exp)
     {
-        Echo(exp.ToString());
+        statistics_.registerException(exp);
+        InitilizeApp();
     }
 }
 
@@ -617,17 +592,44 @@ private class Config
         MyIni ini = new MyIni();
         if (ini.TryParse(block.CustomData))
         {
+            // read system config
+            if (ini.ContainsSection("system"))
+            {
+                Program.DefaultAirlockTag = getIniString(ini, "system", "tag", "Airlock");
+                Program.DefaultAirlockInnerTag = getIniString(ini, "system", "innertag", "In");
+                Program.DefaultAirlockOuterTag = getIniString(ini, "system", "outertag", "Out");
+                Program.DefaultAirlockDelayTime = TimeSpan.FromSeconds(getIniDouble(ini, "system", "delay", 1.0));
+                Program.DefaultAutomaticMode = getIniAutomatic(ini, "system", "mode", Automatic.Full);
+
+                switch (getIniString(ini, "system", "interval", "10"))
+                {
+                    case "1":
+                        Program.DefualtUpdateFrequency = UpdateFrequency.Update1;
+                        break;
+                    case "100":
+                        Program.DefualtUpdateFrequency = UpdateFrequency.Update100;
+                        break;
+                    default:
+                        Program.DefualtUpdateFrequency = UpdateFrequency.Update10;
+                        break;
+                }
+            }
+
+            // read airlock config
             List<string> sections = new List<string>();
             ini.GetSections(sections);
 
             foreach (var section in sections)
             {
-                Data data = new Data();
-                data.name_ = section;
-                data.delay_ = new TimeSpan(getIniLong(ini, section, "delay", Program.DefaultAirlockDelayTime) * Program.MStoTick);
-                data.automatic_ = getIniAutomatic(ini, section, "automatic", Program.DefaultAutomaticMode);
+                if (section != "system")
+                {
+                    Data data = new Data();
+                    data.name_ = section;
+                    data.delay_ = TimeSpan.FromSeconds(getIniDouble(ini, section, "delay", Program.DefaultAirlockDelayTime.Seconds));
+                    data.automatic_ = getIniAutomatic(ini, section, "automatic", Program.DefaultAutomaticMode);
 
-                cfg.Add(data);
+                    cfg.Add(data);
+                }
             }
 
             return true;
@@ -642,7 +644,7 @@ private class Config
         var data = new Data();
         data.name_ = name;
         data.automatic_ = Program.DefaultAutomaticMode;
-        data.delay_ = new TimeSpan(Program.DefaultAirlockDelayTime * Program.MStoTick);
+        data.delay_ = Program.DefaultAirlockDelayTime;
 
         return data;
     }
@@ -672,6 +674,14 @@ private class Config
     }
 
 
+    private double getIniDouble(MyIni ini, string section, string key, double defaultValue)
+    {
+        if (!ini.ContainsKey(section, key))
+            return defaultValue;
+        return ini.Get(section, key).ToDouble(defaultValue);
+    }
+
+
     private Config.Automatic getIniAutomatic(MyIni ini, string section, string key, Config.Automatic defaultValue)
     {
         string val = getIniString(ini, section, key, "");
@@ -680,5 +690,96 @@ private class Config
         if (!Enum.TryParse<Config.Automatic>(val, out result))
             return defaultValue;
         return result;
+    }
+}
+
+public class Statistics
+{
+    char[] runSymbol_ = { '-', '\\', '|', '/' };
+    int runSymbolIndex_ = 0;
+    char getRunSymbol()
+    {
+        char sym = runSymbol_[runSymbolIndex_++];
+        runSymbolIndex_ %= 4;
+        return sym;
+    }
+
+    double sensitivity_ = 0.01;
+    public void setSensitivity(UpdateFrequency uf)
+    {
+        switch (uf)
+        {
+            case UpdateFrequency.Update1:
+                sensitivity_ = 1;
+                return;
+            case UpdateFrequency.Update10:
+                sensitivity_ = 0.1;
+                return;
+            case UpdateFrequency.Update100:
+                sensitivity_ = 0.01;
+                return;
+        }
+    }
+
+    string exception_ = "";
+    public void registerException(Exception exp)
+    {
+        exception_ = exp.ToString();
+    }
+
+    TimeSpan nextUpdate_ = new TimeSpan(0);
+    TimeSpan updateInterval_ = TimeSpan.FromSeconds(1.0);
+    TimeSpan ticks_ = new TimeSpan(0);
+
+    StringBuilder sb_ = new StringBuilder();
+
+    long instructionCountLastUpdate_ = 0;
+    long callChainCountLastUpdate_ = 0;
+    long ticksSinceLastUpdate_ = 0;
+    double timeSinceLastUpdate_ = 0.0;
+
+    public string update(Program app)
+    {
+        ticks_ += app.Runtime.TimeSinceLastRun;
+
+        // update
+        instructionCountLastUpdate_ += app.Runtime.CurrentInstructionCount;
+        callChainCountLastUpdate_ += app.Runtime.CurrentCallChainDepth;
+        timeSinceLastUpdate_ += app.Runtime.LastRunTimeMs * sensitivity_;
+        ticksSinceLastUpdate_++;
+
+        if (nextUpdate_ <= ticks_)
+        {
+            // print statistic
+            sb_.Clear();
+            sb_.AppendLine($"Airlock Manager ({Program.VERSION})\n=============================");
+            sb_.AppendLine($"Running: {getRunSymbol()}");
+            sb_.AppendLine($"Time: {ticks_}");
+            sb_.AppendLine($"Ticks: {ticksSinceLastUpdate_}");
+            sb_.AppendLine($"Avg Time/tick: {(timeSinceLastUpdate_ / ticksSinceLastUpdate_).ToString("#0.0#####")}ms");
+            sb_.AppendLine($"Avg Inst/tick: {(instructionCountLastUpdate_ / (double)ticksSinceLastUpdate_).ToString("#0.00")}/{app.Runtime.MaxInstructionCount}");
+            sb_.AppendLine($"Avg Call/tick: {(callChainCountLastUpdate_ / (double)ticksSinceLastUpdate_).ToString("#0.00")}/{app.Runtime.MaxCallChainDepth}");
+            sb_.AppendLine($"Airlocks: {app.airlocks.Count}");
+            sb_.AppendLine("Airlock States\n------------------------------------");
+
+            foreach(Airlock airlock in app.airlocks)
+            {
+                if (airlock.IsProcessing)
+                    sb_.AppendLine($"{airlock.Name}: {airlock.CurrentSate}");
+            }
+
+            if (exception_ != "")
+                sb_.Append($"\nException:\n{exception_}\n");
+
+            nextUpdate_ = ticks_ + updateInterval_;
+            instructionCountLastUpdate_ = 0;
+            callChainCountLastUpdate_ = 0;
+            ticksSinceLastUpdate_ = 0;
+            timeSinceLastUpdate_ = 0.0;
+
+            return sb_.ToString();
+        }
+
+        return "";
     }
 }

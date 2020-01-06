@@ -21,36 +21,32 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        const string VERSION = "0.3 Alpha";
-        const long MStoTick = 10000;
+        const string VERSION = "0.4 Alpha";
 
-
-        // Default values
-        const string DefultAirlockTag = "Airlock";
-        const string DefultAirlockInnerTag = "Inner";
-        const string DefultAirlockOuterTag = "Outer";
-        const long DefaultAirlockDelayTime = 1000; // set to 1.0s
-        const Config.Automatic DefaultAutomaticMode = Config.Automatic.Full;
-        const UpdateFrequency DefualtUpdateFrequency = UpdateFrequency.Update1;
-
+        // config values
+        static string DefaultAirlockTag = "Airlock";
+        static string DefaultAirlockInnerTag = "In";
+        static string DefaultAirlockOuterTag = "Out";
+        static TimeSpan DefaultAirlockDelayTime = TimeSpan.FromSeconds(1);
+        static Config.Automatic DefaultAutomaticMode = Config.Automatic.Full;
+        static UpdateFrequency DefualtUpdateFrequency = UpdateFrequency.Update10;
 
         private delegate bool AirlockPairCallback(Airlock pair);
 
-
         // variables
-        private List<Airlock> airlocks = new List<Airlock>();
-        private List<Config.Data> configs_ = new List<Config.Data>();
-        private IMyTextSurface surface_ = null;
-        private string log_ = "";
-
+        List<Airlock> airlocks = new List<Airlock>();
+        List<Config.Data> configs_ = new List<Config.Data>();
+        IMyTextSurface surface_ = null;
+        TimeSpan timer = new TimeSpan(0);
+        Statistics statistics_ = new Statistics();
 
         #region Tools
         private string getAirlockName(string customName)
         {
             return customName
-                .Replace(Program.DefultAirlockTag, "")
-                .Replace(Program.DefultAirlockInnerTag, "")
-                .Replace(Program.DefultAirlockOuterTag, "")
+                .Replace(DefaultAirlockTag, "")
+                .Replace(DefaultAirlockInnerTag, "")
+                .Replace(DefaultAirlockOuterTag, "")
                 .Trim();
         }
 
@@ -92,11 +88,11 @@ namespace IngameScript
             }
 
             // find new doors
-            airlocks = new List<Airlock>();
+            airlocks.Clear();
             GridTerminalSystem.GetBlocksOfType<IMyDoor>(null, (door) =>
             {
                 // is an airlock door
-                if (door.CustomName.Contains(Program.DefultAirlockTag))
+                if (door.CustomName.Contains(Program.DefaultAirlockTag))
                 {
                     string airlockName = getAirlockName(door.CustomName);
 
@@ -129,69 +125,48 @@ namespace IngameScript
             surface_.FontColor = new Color(0, 216, 23);
             surface_.Font = "debug";
         }
+
+        void InitilizeApp()
+        {
+            // initialize
+            InitializeAirLocks();
+
+            Runtime.UpdateFrequency = DefualtUpdateFrequency;
+            statistics_.setSensitivity(Runtime.UpdateFrequency);
+        }
         #endregion // Tools
 
         #region SE Methods
         public Program()
         {
-            Runtime.UpdateFrequency = DefualtUpdateFrequency;
-
-            // initialize
-            InitializeAirLocks();
+            InitilizeApp();
         }
-
 
         public void Save()
         {
         }
-
-
-        // execute iteration
-        private TimeSpan timer = new TimeSpan(0);
-        private double lastRunTimeMS = 0;
-        private int ticks = 0;
 
         public void Main(string argument, UpdateType updateSource)
         {
             try
             {
                 timer += Runtime.TimeSinceLastRun;
-                lastRunTimeMS += Runtime.LastRunTimeMs;
-
-                if (ticks == 0)
-                {
-                    log_ = $"Airlock Manager (v{Program.VERSION})\n";
-                    log_ += "============================\n";
-                    log_ += $"Airlocks: {airlocks.Count.ToString()}\n";
-                    log_ += $"Avg Exec Time: {(lastRunTimeMS / 100.0).ToString("#0.#######")}ms\n";
-                    log_ += "Airlock States\n------------------------------------\n";
-                    //log += $"timer: {timer.TotalSeconds.ToString("#0.###")}\n";
-                }
 
                 // process iteration step
                 foreach (var airlock in airlocks)
-                {
                     airlock.Tick(timer);
 
-                    if (ticks == 0)
-                    {
-                        if (airlock.IsProcessing)
-                            log_ += $"{airlock.Name}: {airlock.CurrentSate.ToString()}\n";
-                    }
-                }
-
-                if (ticks == 0)
+                string stats = statistics_.update(this);
+                if (stats != "")
                 {
-                    surface_.WriteText(log_);
-                    lastRunTimeMS = 0;
+                    Echo(stats);
+                    surface_.WriteText(stats);
                 }
-
-                if (++ticks > 100)
-                    ticks = 0;
             }
             catch (Exception exp)
             {
-                Echo(exp.ToString());
+                statistics_.registerException(exp);
+                InitilizeApp();
             }
         }
         #endregion // SE Methods
