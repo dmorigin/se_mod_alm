@@ -9,7 +9,7 @@
  * For detailed informations read the README.md on github.
  */
 
-const string VERSION = "0.4 Alpha";
+const string VERSION = "0.5 Alpha";
 
 // config values
 static string DefaultAirlockTag = "Airlock";
@@ -108,7 +108,7 @@ private void InitializeAirLocks()
     surface_.BackgroundColor = new Color(5, 36, 0);
 
     surface_.TextPadding = 0.0f;
-    surface_.FontSize = 1f;
+    surface_.FontSize = 0.7f;
     surface_.FontColor = new Color(0, 216, 23);
     surface_.Font = "debug";
 }
