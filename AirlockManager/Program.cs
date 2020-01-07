@@ -21,7 +21,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        const string VERSION = "0.5 Alpha";
+        const string VERSION = "0.51 Alpha";
 
         // config values
         static string DefaultAirlockTag = "Airlock";
