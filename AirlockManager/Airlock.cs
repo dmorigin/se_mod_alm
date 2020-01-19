@@ -34,63 +34,15 @@ namespace IngameScript
                 }
 
 
-                public IMyDoor Obj
-                {
-                    get
-                    {
-                        return block_;
-                    }
-                }
+                public IMyDoor Obj => block_;
+                public bool IsOpen => block_.Status == DoorStatus.Open;
+                public bool IsClosed => block_.Status == DoorStatus.Closed;
+                public DoorStatus Status => block_.Status;
 
-
-                public bool IsOpen
-                {
-                    get
-                    {
-                        return block_.Status == DoorStatus.Open;
-                    }
-                }
-
-
-                public bool IsClosed
-                {
-                    get
-                    {
-                        return block_.Status == DoorStatus.Closed;
-                    }
-                }
-
-                public DoorStatus Status
-                {
-                    get
-                    {
-                        return block_.Status;
-                    }
-                }
-
-
-                public void Open()
-                {
-                    block_.OpenDoor();
-                }
-
-
-                public void Close()
-                {
-                    block_.CloseDoor();
-                }
-
-
-                public void On()
-                {
-                    block_.ApplyAction("OnOff_On");
-                }
-
-
-                public void Off()
-                {
-                    block_.ApplyAction("OnOff_Off");
-                }
+                public void Open() => block_.OpenDoor();
+                public void Close() => block_.CloseDoor();
+                public void On() => block_.ApplyAction("OnOff_On");
+                public void Off() => block_.ApplyAction("OnOff_Off");
             }
 
 
@@ -138,40 +90,10 @@ namespace IngameScript
 
 
             #region Properties
-            public string Name
-            {
-                get
-                {
-                    return config_.name_;
-                }
-            }
-
-
-            public Config.Automatic Automatic
-            {
-                get
-                {
-                    return config_.automatic_;
-                }
-            }
-
-
-            public bool IsProcessing
-            {
-                get
-                {
-                    return state_ != State.Idle;
-                }
-            }
-
-
-            public State CurrentSate
-            {
-                get
-                {
-                    return state_;
-                }
-            }
+            public string Name => config_.name_;
+            public Config.Automatic Automatic => config_.automatic_;
+            public bool IsProcessing => state_ != State.Idle;
+            public State CurrentSate => state_;
             #endregion // Properties
 
             #region Tools
