@@ -37,3 +37,19 @@ You can set the following two things:
   * Full: In this mode everything is automatic. Is default value.
   * Half: In this mode all other doors are locked and unlocked, but not automatically opened. 
   * Manual: In this mode everything has to be done manually.
+
+**System Configuration**
+
+Unter the special ini tag "system", you can configure some basics:
+
+* tag: Name which is used to search for arilocks (Default: "Airlock")
+* mode: The default mode which is used, if nothing else is set for a single airlock. (Default: Full)
+  * Full: In this mode everything is automatic. Is default value.
+  * Half: In this mode all other doors are locked and unlocked, but not automatically opened. 
+  * Manual: In this mode everything has to be done manually.
+* interval: Set the update frequency. Default: 10)
+  * 1: Executed every single tick
+  * 10: Executed every 10th tick
+  * 100: Executed every 100th tick
+* innertag: Compatibility only: Removes this name from the airlock name (Default: "In")
+* outertag: Compatibility only: Removes this name from the airlock name (Default: "Out")
