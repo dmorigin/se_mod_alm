@@ -3,12 +3,6 @@
 This is a simple manager for your airlocks. All he does is turn the doors on and off and open and close them. The 
 trigger for the processing chain is opening one of the doors of an airlock.
 
-#### How to get it
-
-At the moment the script is not available in the workshop, because I mainly use it myself and revise and extend 
-it bit by bit if I feel like it. If you still want to try it, no problem. You will find a file called: genereted.cs 
-in the main directory. Just copy the whole content of this file.
-
 #### How to Setup
 
 It's very simple. Name each of your doors according to the following principle: Airlock Name. Where "Name" is 
