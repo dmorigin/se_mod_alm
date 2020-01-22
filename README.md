@@ -47,3 +47,10 @@ Under the special ini section "system", you can configure some basics:
   * 100: Executed every 100th tick
 * innertag: Compatibility only: Removes this name from the airlock name (Default: "In")
 * outertag: Compatibility only: Removes this name from the airlock name (Default: "Out")
+
+Short example:
+```
+[system]
+tag=MyAirlock
+interval=1
+```
