@@ -36,7 +36,7 @@ You can set the following two things:
 
 Unter the special ini tag "system", you can configure some basics:
 
-* tag: Name which is used to search for arilocks (Default: "Airlock")
+* tag: Name which is used to search for airlocks (Default: "Airlock")
 * mode: The default mode which is used, if nothing else is set for a single airlock. (Default: Full)
   * Full: In this mode everything is automatic. Is default value.
   * Half: In this mode all other doors are locked and unlocked, but not automatically opened. 
