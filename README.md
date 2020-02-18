@@ -3,12 +3,6 @@
 This is a simple manager for your airlocks. All he does is turn the doors on and off and open and close them. The 
 trigger for the processing chain is opening one of the doors of an airlock.
 
-#### How to get it
-
-At the moment the script is not available in the workshop, because I mainly use it myself and revise and extend 
-it bit by bit if I feel like it. If you still want to try it, no problem. You will find a file called: genereted.cs 
-in the main directory. Just copy the whole content of this file.
-
 #### How to Setup
 
 It's very simple. Name each of your doors according to the following principle: Airlock Name. Where "Name" is 
@@ -40,9 +34,9 @@ You can set the following two things:
 
 **System Configuration**
 
-Unter the special ini tag "system", you can configure some basics:
+Under the special ini section "system", you can configure some basics:
 
-* tag: Name which is used to search for arilocks (Default: "Airlock")
+* tag: Name which is used to search for airlocks (Default: "Airlock")
 * mode: The default mode which is used, if nothing else is set for a single airlock. (Default: Full)
   * Full: In this mode everything is automatic. Is default value.
   * Half: In this mode all other doors are locked and unlocked, but not automatically opened. 
@@ -53,3 +47,10 @@ Unter the special ini tag "system", you can configure some basics:
   * 100: Executed every 100th tick
 * innertag: Compatibility only: Removes this name from the airlock name (Default: "In")
 * outertag: Compatibility only: Removes this name from the airlock name (Default: "Out")
+
+Short example:
+```
+[system]
+tag=MyAirlock
+interval=1
+```
