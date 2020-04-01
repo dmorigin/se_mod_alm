@@ -21,7 +21,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        const string VERSION = "0.52 Alpha";
+        const string VERSION = "0.53 Alpha";
 
         // config values
         static string DefaultAirlockTag = "Airlock";
@@ -92,7 +92,7 @@ namespace IngameScript
             GridTerminalSystem.GetBlocksOfType<IMyDoor>(null, (door) =>
             {
                 // is an airlock door
-                if (door.CustomName.Contains(Program.DefaultAirlockTag))
+                if (door.IsSameConstructAs(Me) && door.CustomName.Contains(Program.DefaultAirlockTag))
                 {
                     string airlockName = getAirlockName(door.CustomName);
 
