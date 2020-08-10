@@ -26,7 +26,7 @@ key=value
 
 You can set the following two things:
 
-* delay: Specifies the delay in ms between closing one side of the airlock and opening the other. The default value is 1000ms.
+* delay: Specifies the delay in seconds between closing one side of the airlock and opening the other. The default value is 1s.
 * automatic: Here you can select the automatic mode. There are 3 modes available.
   * Full: In this mode everything is automatic. Is default value.
   * Half: In this mode all other doors are locked and unlocked, but not automatically opened. 

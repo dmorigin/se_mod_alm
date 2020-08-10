@@ -21,7 +21,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        const string VERSION = "0.53 Alpha";
+        const string VERSION = "0.54 Alpha";
 
         // config values
         static string DefaultAirlockTag = "Airlock";
@@ -31,7 +31,7 @@ namespace IngameScript
         static Config.Automatic DefaultAutomaticMode = Config.Automatic.Full;
         static UpdateFrequency DefualtUpdateFrequency = UpdateFrequency.Update10;
 
-        private delegate bool AirlockPairCallback(Airlock pair);
+        delegate bool AirlockPairCallback(Airlock pair);
 
         // variables
         List<Airlock> airlocks = new List<Airlock>();
@@ -41,7 +41,19 @@ namespace IngameScript
         Statistics statistics_ = new Statistics();
 
         #region Tools
-        private string getAirlockName(string customName)
+        void UpdateStatistic(Statistics statistics, StringBuilder sb)
+        {
+            sb.AppendLine($"Airlocks: {airlocks.Count}");
+            sb.AppendLine("Airlock States\n------------------------------------");
+
+            foreach (Airlock airlock in airlocks)
+            {
+                if (airlock.IsProcessing)
+                    sb.AppendLine(airlock.updateStatistic());
+            }
+        }
+
+        string getAirlockName(string customName)
         {
             return customName
                 .Replace(DefaultAirlockTag, "")
@@ -51,7 +63,7 @@ namespace IngameScript
         }
 
 
-        private bool findAirlockPair(AirlockPairCallback callback, string name)
+        bool findAirlockPair(AirlockPairCallback callback, string name)
         {
             foreach (var pair in airlocks)
             {
@@ -64,7 +76,7 @@ namespace IngameScript
         }
 
 
-        private Config.Data getConfigData(string name)
+        Config.Data getConfigData(string name)
         {
             foreach (var config in configs_)
             {
@@ -76,7 +88,7 @@ namespace IngameScript
         }
 
 
-        private void InitializeAirLocks()
+        void InitializeAirLocks()
         {
             // read config
             Config config = new Config();
@@ -103,11 +115,11 @@ namespace IngameScript
                     }, airlockName))
                     {
                         // add new one
-                        Airlock airLock = new Airlock(getConfigData(airlockName));
-                        airLock.AddDoor(door);
+                        Airlock airlock = new Airlock(getConfigData(airlockName));
+                        airlock.AddDoor(door);
 
-                        Echo("Find new airlock pair: [" + airLock.Name + "]");
-                        airlocks.Add(airLock);
+                        //Echo("Find new airlock pair: [" + airlock.Name + "]");
+                        airlocks.Add(airlock);
                     }
                 }
 
@@ -139,6 +151,8 @@ namespace IngameScript
         #region SE Methods
         public Program()
         {
+            statistics_.Title = "Airlock Manager";
+            statistics_.FlushStatistic += UpdateStatistic;
             InitilizeApp();
         }
 
@@ -158,10 +172,7 @@ namespace IngameScript
 
                 string stats = statistics_.update(this);
                 if (stats != "")
-                {
-                    Echo(stats);
                     surface_.WriteText(stats);
-                }
             }
             catch (Exception exp)
             {

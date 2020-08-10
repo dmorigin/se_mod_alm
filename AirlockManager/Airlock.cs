@@ -88,6 +88,11 @@ namespace IngameScript
                 doors_.Add(new Door(block));
             }
 
+            public string updateStatistic()
+            {
+                return $"{Name}: {CurrentSate}";
+            }
+
 
             #region Properties
             public string Name => config_.name_;
